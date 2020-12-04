@@ -1,10 +1,11 @@
 package cpen221.mp3;
 
+import cpen221.mp3.example.GetThread;
+import cpen221.mp3.example.PutThread;
 import cpen221.mp3.fsftbuffer.*;
 import org.junit.Test;
 
 import java.io.InvalidObjectException;
-import java.nio.Buffer;
 
 import static org.junit.Assert.*;
 
@@ -172,6 +173,25 @@ public class Tests {
             System.out.println("Could not find 'a'. (Correct)");
             assertEquals(1,1);
         }
+
+    }
+    @Test
+    public void test3(){
+
+        int LIMIT = 10;
+        FSFTBuffer f = new FSFTBuffer(1,100);
+
+        Thread t = new PutThread(f);
+        Thread t2 = new PutThread(f);
+        Thread t3 = new GetThread(f);
+        Thread t4 = new GetThread(f);
+
+        t.start();
+        t2.start();
+
+
+        t3.start();
+        t4.start();
 
     }
 

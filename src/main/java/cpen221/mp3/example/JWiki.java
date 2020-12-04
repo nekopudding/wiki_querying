@@ -1,5 +1,5 @@
 package cpen221.mp3.example;
-
+/*
 import org.fastily.jwiki.core.Wiki;
 import org.fastily.jwiki.dwrap.Revision;
 import org.fastily.jwiki.core.Wiki;
@@ -13,7 +13,7 @@ import java.util.List;
     You can remove this class for your submission.
     If you do submit this class then it should be compilable.
  */
-
+/*
 public class JWiki {
     public static void main(String[] args) {
         Wiki wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
@@ -33,3 +33,4 @@ public class JWiki {
         System.exit(0);
     }
 }
+ */

@@ -63,7 +63,7 @@ public class FSFTBuffer<T extends Bufferable> {
      * If the buffer is full then remove the least recently accessed
      * object to make room for the new object.
      */
-    public boolean put(T t) {
+    public synchronized boolean put(T t) {
         removeTimedOut();
         if (this.timeouts.size() >= capacity) {
             T stalest = findStalest();
@@ -125,7 +125,7 @@ public class FSFTBuffer<T extends Bufferable> {
      * @return the object that matches the identifier from the
      * buffer
      */
-    public T get(String id) throws InvalidObjectException {
+    public synchronized T get(String id) throws InvalidObjectException {
         removeTimedOut();
         if (names.get(id) == null) {
             throw new InvalidObjectException("Object not found in FSFT Buffer.");
@@ -144,7 +144,7 @@ public class FSFTBuffer<T extends Bufferable> {
      * @param id the identifier of the object to "touch"
      * @return true if successful and false otherwise
      */
-    public boolean touch(String id) {
+    public synchronized boolean touch(String id) {
         removeTimedOut();
         T t = names.get(id);
         if (t == null) {
@@ -164,7 +164,7 @@ public class FSFTBuffer<T extends Bufferable> {
      * @param t the object to update
      * @return true if successful and false otherwise
      */
-    public boolean update(T t) {
+    public synchronized boolean update(T t) {
         removeTimedOut();
         if (timeouts.get(t) == null) {
             return false;
