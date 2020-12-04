@@ -4,6 +4,26 @@ import java.io.InvalidObjectException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Finite space finite time buffer.
+ *
+ * Abstraction Function:
+ * capacity represents the maximum number of objects that can be stored in the FSFT buffer.
+ * timeout represents the number of seconds that an object can stay in the
+ * buffer without being interacted with before being timed out and removed.
+ * timeouts is a map that represents all of the objects in the buffer and maps the time in which
+ * they will timeout.
+ * names is a map that represents all of the ids of the objects mapped to the objects themselves.
+ *
+ * Representation Invariant: timeouts.size() <= capacity && names.size() == timeouts.size().
+ * Every key in timeouts must appear as a value in names exactly once.
+ * There must not exist a value of less than 0 in timeouts.
+ * Every key.equals(value.id()) in names.
+ * capacity > 0 && timeout > 0.
+ *
+ *
+ * @param <T>
+ */
 public class FSFTBuffer<T extends Bufferable> {
 
     /* the default buffer size is 32 objects */
@@ -58,9 +78,12 @@ public class FSFTBuffer<T extends Bufferable> {
     }
 
     /**
-     * All timed out objects must be removed from the buffer.
+     * Helper method to find the stalest object in the buffer.
      *
-     * @return
+     * Requires: All timed out objects must be removed from the buffer.
+     *
+     * @return the object that has the smallest difference between its timeout time and the current
+     * time.
      */
     private T findStalest() {
         T stalestObj = null;
@@ -76,6 +99,7 @@ public class FSFTBuffer<T extends Bufferable> {
     }
 
     /**
+     * Helper method that removes object t from both the names map and the timeouts map.
      * @param t object to be removed from the buffer. Must be in the buffer, and be mapped to same
      *          String ID as its own id value.
      */
@@ -85,7 +109,8 @@ public class FSFTBuffer<T extends Bufferable> {
     }
 
     /**
-     *
+     * Helper method that removes all objects from the buffer that have timed out.
+     * Timing out occurs when an object's timeout time is lesser than the current time.
      */
     private void removeTimedOut() {
         for (T t : timeouts.keySet()) {
