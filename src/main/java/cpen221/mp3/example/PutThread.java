@@ -13,32 +13,19 @@ public class PutThread extends Thread {
 
     @Override
     public void run() {
-        Bufferable a = new Bufferable() {
-            @Override
-            public String id() {
-                return "a";
-            }
-        };
-        Bufferable b = new Bufferable() {
-            @Override
-            public String id() {
-                return "b";
-            }
-        };
-        for (int i = 0; i < 1000; i++) {
-            boolean killthread = false;
-            while (!killthread) {
-                try {
-                    if(f.put(a))
-                        System.out.println(a);
-                    Thread.sleep(10);
-                    if (f.put(b))
-                        System.out.println(b);
 
-                } catch (InterruptedException t) {
-                    killthread = true;
+        for(int j =0; j < 50; j++) {
+            int finalJ = j;
+            Bufferable a = new Bufferable() {
+                @Override
+                public String id() {
+                    return String.valueOf(finalJ);
                 }
-            }
+
+            };
+            f.put(a);
+
         }
+
     }
 }
