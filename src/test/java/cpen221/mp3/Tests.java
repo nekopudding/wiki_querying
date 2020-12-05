@@ -178,7 +178,7 @@ public class Tests {
     @Test
     public void test2Put(){
 
-        FSFTBuffer f = new FSFTBuffer();
+        FSFTBuffer<Bufferable> f = new FSFTBuffer<>();
 
         Thread t = new PutThread(f);
         Thread t2 = new PutThread(f);
@@ -203,7 +203,7 @@ public class Tests {
     @Test
     public void test2Get(){
 
-        FSFTBuffer f = new FSFTBuffer(10, 3600);
+        FSFTBuffer<Bufferable>f = new FSFTBuffer<>(10, 3600);
 
         Bufferable a = new Bufferable() {
             @Override
@@ -246,7 +246,7 @@ public class Tests {
     @Test
     public void test_PutGet(){
 
-        FSFTBuffer f = new FSFTBuffer(10, 3600);
+        FSFTBuffer<Bufferable> f = new FSFTBuffer<>(10, 3600);
 
         Thread t = new PutThread(f);
         Thread t2 = new GetThread(f,"1");
@@ -272,9 +272,7 @@ public class Tests {
     @Test
     public void test_get(){
 
-        FSFTBuffer f = new FSFTBuffer(1,1000);
-
-
+        FSFTBuffer<Bufferable> f = new FSFTBuffer<>(1, 1000);
 
         GetThread t = new GetThread(f,"1");
 
@@ -295,6 +293,5 @@ public class Tests {
         }
 
     }
-
 
 }
