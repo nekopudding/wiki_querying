@@ -14,7 +14,7 @@ public class PutThread extends Thread {
     @Override
     public void run() {
 
-        for(int j =0; j < 50; j++) {
+        for (int j = 0; j < 50; j++) {
             int finalJ = j;
             Bufferable a = new Bufferable() {
                 @Override
@@ -24,6 +24,13 @@ public class PutThread extends Thread {
 
             };
             f.put(a);
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                System.out.println("Sleep interrupted.");
+            }
+
 
         }
 

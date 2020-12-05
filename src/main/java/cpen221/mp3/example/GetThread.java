@@ -7,20 +7,29 @@ import java.io.InvalidObjectException;
 
 public class GetThread extends Thread {
     FSFTBuffer f;
+    String test;
 
-
-    public GetThread(FSFTBuffer f) {
+    public GetThread(FSFTBuffer f, String test) {
         this.f = f;
+        this.test = test;
     }
 
     @Override
     public void run() {
+
+
         try {
-            System.out.println(f.get("a"));
-            f.get("b");
-            System.out.println("get");
+            for (int j = 0; j < 50; j++) {
+               // int finalJ = j;
+               // f.get(String.valueOf(finalJ));
+
+                f.get(test);
+                Thread.sleep(1000);
+            }
+
+
         }
-        catch (InvalidObjectException t) {
+        catch (InvalidObjectException | InterruptedException t) {
             System.out.println(t);
         }
 

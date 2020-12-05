@@ -176,23 +176,125 @@ public class Tests {
 
     }
     @Test
-    public void test3(){
+    public void test2Put(){
 
-        int LIMIT = 10;
-        FSFTBuffer f = new FSFTBuffer(1,100);
+        FSFTBuffer f = new FSFTBuffer();
 
         Thread t = new PutThread(f);
         Thread t2 = new PutThread(f);
-        Thread t3 = new GetThread(f);
-        Thread t4 = new GetThread(f);
 
         t.start();
+        try {
+            Thread.sleep(500);
+        }
+        catch (InterruptedException e){
+            System.out.println("Thread interrupted.");
+        }
         t2.start();
 
+        try {
+            Thread.sleep(30000);
+        }
+        catch (InterruptedException e){
+            System.out.println("Thread interrupted.");
+        }
+    }
 
-        t3.start();
-        t4.start();
+    @Test
+    public void test2Get(){
+
+        FSFTBuffer f = new FSFTBuffer(10, 3600);
+
+        Bufferable a = new Bufferable() {
+            @Override
+            public String id() {
+                return "1";
+            }
+        };
+        Bufferable b = new Bufferable() {
+            @Override
+            public String id() {
+                return "2";
+            }
+        };
+
+        f.put(a);
+        f.put(b);
+
+        Thread t = new GetThread(f, "1");
+        Thread t2 = new GetThread(f,"2");
+
+        t.start();
+        try {
+            Thread.sleep(500);
+        }
+        catch (InterruptedException e){
+            System.out.println("Thread interrupted.");
+        }
+        t2.start();
+
+        try {
+            Thread.sleep(10000);
+        }
+        catch (InterruptedException e){
+            System.out.println("Thread interrupted.");
+        }
+
 
     }
+
+    @Test
+    public void test_PutGet(){
+
+        FSFTBuffer f = new FSFTBuffer(10, 3600);
+
+        Thread t = new PutThread(f);
+        Thread t2 = new GetThread(f,"1");
+
+        t.start();
+        try {
+            Thread.sleep(2100);
+        }
+        catch (InterruptedException e){
+            System.out.println("Thread interrupted.");
+        }
+        t2.start();
+
+        try {
+            Thread.sleep(10000);
+        }
+        catch (InterruptedException e){
+            System.out.println("Thread interrupted.");
+        }
+
+    }
+
+    @Test
+    public void test_get(){
+
+        FSFTBuffer f = new FSFTBuffer(1,1000);
+
+
+
+        GetThread t = new GetThread(f,"1");
+
+        Bufferable b = new Bufferable() {
+            @Override
+            public String id() {
+                return "1";
+            }
+        };
+        f.put(b);
+
+        t.start();
+
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException ie){
+            System.out.println("Sleep Interrupted");
+        }
+
+    }
+
 
 }

@@ -68,12 +68,14 @@ public class FSFTBuffer<T extends Bufferable> {
         if (this.timeouts.size() >= capacity) {
             T stalest = findStalest();
             String id = stalest.id();
+            System.out.println("Removed" + id);
             timeouts.remove(stalest);
             names.remove(id);
         }
         String name = t.id();
         this.timeouts.put(t, (int) (System.currentTimeMillis() / 1000 + timeout));
         this.names.put(name, t);
+        System.out.println("Put"+t.id());
         return true;
     }
 
@@ -116,6 +118,7 @@ public class FSFTBuffer<T extends Bufferable> {
         for (T t : timeouts.keySet()) {
             if (timeouts.get(t) <= System.currentTimeMillis()/1000) {
                 removeObject(t);
+                System.out.println("timeout");
             }
         }
     }
@@ -133,6 +136,7 @@ public class FSFTBuffer<T extends Bufferable> {
         if (!touch(id)) {
             throw new InvalidObjectException("Error with object timeout.");
         }
+        System.out.println("Get" + id);
         return names.get(id);
     }
 
