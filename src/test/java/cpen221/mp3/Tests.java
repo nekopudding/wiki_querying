@@ -196,6 +196,8 @@ public class Tests {
 
         try {
             Thread.sleep(30000);
+            t.join();
+            t2.join();
         }
         catch (InterruptedException e){
             System.out.println("Thread interrupted.");
@@ -239,6 +241,8 @@ public class Tests {
 
         try {
             Thread.sleep(10000);
+            t.join();
+            t2.join();
         }
         catch (InterruptedException e){
             System.out.println("Thread interrupted.");
@@ -266,6 +270,8 @@ public class Tests {
 
         try {
             Thread.sleep(10000);
+            t.join();
+            t2.join();
         }
         catch (InterruptedException e){
             System.out.println("Thread interrupted.");
@@ -293,6 +299,7 @@ public class Tests {
 
         try {
             Thread.sleep(1000);
+            t.join();
         } catch (InterruptedException ie){
             System.out.println("Sleep Interrupted");
             fail();

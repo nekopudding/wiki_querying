@@ -19,7 +19,7 @@ public class GetThread extends Thread {
 
 
         try {
-            for (int j = 0; j < 50; j++) {
+            for (int j = 0; j < 25; j++) {
                // int finalJ = j;
                // f.get(String.valueOf(finalJ));
 
