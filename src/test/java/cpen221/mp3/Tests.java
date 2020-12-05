@@ -177,7 +177,8 @@ public class Tests {
     }
     @Test
     public void test2Put(){
-
+        //if the put order is the same as the order of removal once
+        //max capacity is reached, then the test succeeds
         FSFTBuffer<Bufferable> f = new FSFTBuffer<>();
 
         Thread t = new PutThread(f);
@@ -189,6 +190,7 @@ public class Tests {
         }
         catch (InterruptedException e){
             System.out.println("Thread interrupted.");
+            fail();
         }
         t2.start();
 
@@ -197,12 +199,13 @@ public class Tests {
         }
         catch (InterruptedException e){
             System.out.println("Thread interrupted.");
+            fail();
         }
     }
 
     @Test
     public void test2Get(){
-
+        //test to see if the get methods work concurrently
         FSFTBuffer<Bufferable>f = new FSFTBuffer<>(10, 3600);
 
         Bufferable a = new Bufferable() {
@@ -230,6 +233,7 @@ public class Tests {
         }
         catch (InterruptedException e){
             System.out.println("Thread interrupted.");
+            fail();
         }
         t2.start();
 
@@ -238,14 +242,13 @@ public class Tests {
         }
         catch (InterruptedException e){
             System.out.println("Thread interrupted.");
+            fail();
         }
-
-
     }
 
     @Test
     public void test_PutGet(){
-
+        //test to see if put and get work concurrently
         FSFTBuffer<Bufferable> f = new FSFTBuffer<>(10, 3600);
 
         Thread t = new PutThread(f);
@@ -257,6 +260,7 @@ public class Tests {
         }
         catch (InterruptedException e){
             System.out.println("Thread interrupted.");
+            fail();
         }
         t2.start();
 
@@ -265,6 +269,7 @@ public class Tests {
         }
         catch (InterruptedException e){
             System.out.println("Thread interrupted.");
+            fail();
         }
 
     }
@@ -290,6 +295,7 @@ public class Tests {
             Thread.sleep(1000);
         } catch (InterruptedException ie){
             System.out.println("Sleep Interrupted");
+            fail();
         }
 
     }
