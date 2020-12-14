@@ -21,6 +21,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * Every key.equals(value.id()) in names.
  * capacity > 0 && timeout > 0.
  *
+ * Thread Safety Condition: Public mutator and observer methods are synchronized,
+ * hence race conditions involving the contents of the buffer should not occur.
+ *
  *
  * @param <T>
  */
