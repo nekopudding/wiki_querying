@@ -2,14 +2,14 @@ package cpen221.mp3.fsftbuffer;
 
 public class BufferableTime implements Bufferable {
     String id;
-    long time;
+    String name;
 
-    public BufferableTime(String id, long time) {
-        this.id = id;
-        this.time = time;
+    public BufferableTime(String name) {
+        this.id = String.valueOf(System.currentTimeMillis());
+        this.name = name;
     }
 
-    public long getTime() { return this.time; }
+    public String getName() { return this.name; }
 
     @Override
     public String id() {

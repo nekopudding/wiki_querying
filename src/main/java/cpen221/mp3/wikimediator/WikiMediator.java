@@ -1,9 +1,14 @@
 package cpen221.mp3.wikimediator;
 
 import java.io.InvalidObjectException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.fastily.jwiki.core.Wiki;
 import cpen221.mp3.fsftbuffer.*;
+
 
 /**
  * Mediator supporting requests made in the en.wikipedia domain
@@ -17,6 +22,12 @@ import cpen221.mp3.fsftbuffer.*;
  *
  * Representation Invariant:
  *  wiki, searchCache, getPageCache, pageCount, and requests are not null
+ *  The buffer does not contain elements with the same Bufferable id
+ *  pageCount only contains BufferableInt, the values of BufferableInt >= 1, and are only modified through
+ *      search and getPage requests
+ *  searchCache only contains BufferableList
+ *  getPageCache only contains BufferableString
+ *  requests only contain BufferableTime
  *
  *
  * Thread Safety Condition:
@@ -47,6 +58,7 @@ public class WikiMediator {
         wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
         searchCache = new FSFTBuffer(capacity, timeout);
         getPageCache = new FSFTBuffer(capacity, timeout);
+        requests = new FSFTBuffer(capacity, timeout);
     }
 
     public WikiMediator () {
@@ -54,6 +66,7 @@ public class WikiMediator {
         searchCache = new FSFTBuffer();
         getPageCache = new FSFTBuffer();
         pageCount = new FSFTBuffer();
+        requests = new FSFTBuffer();
     }
 
     /**
@@ -63,7 +76,10 @@ public class WikiMediator {
      * @param limit
      * @return
      */
-    List<String> search(String query, int limit) {
+    synchronized List<String> search(String query, int limit) {
+        //modify pageCount
+        editPageCount(query);
+        //modify searchCache and return list
         try {
             BufferableList l = (BufferableList) searchCache.get(query);
             return l.getList();
@@ -86,7 +102,10 @@ public class WikiMediator {
      * @param pageTitle
      * @return
      */
-    String getPage(String pageTitle) {
+    synchronized String getPage(String pageTitle) {
+        //modify pageCount
+        editPageCount(pageTitle);
+        //modify getPageCache and return page text
         try {
             BufferableString s = (BufferableString) getPageCache.get(pageTitle);
             return s.getText();
@@ -104,6 +123,26 @@ public class WikiMediator {
     }
 
     /**
+     * Helper method to add one to pageCount each time search and getPage is called.
+     * @param pageTitle
+     */
+    private void editPageCount(String pageTitle) {
+        try {
+            BufferableInt b = (BufferableInt) pageCount.get(pageTitle);
+            b.addCount();
+        }
+        catch (InvalidObjectException e) {
+            if (e.getMessage() == "Object not found in FSFT Buffer.") {
+                Bufferable b = new BufferableInt(pageTitle, 1);
+                pageCount.put(b);
+            }
+            else {
+                throw new IllegalArgumentException(e.getMessage());
+            }
+        }
+    }
+
+    /**
      * Return the most common Strings used in search and
      * getPage requests, with items being sorted in
      * non-increasing count order. When many requests have
@@ -111,9 +150,25 @@ public class WikiMediator {
      * @param limit
      * @return
      */
-    List<String> zeitgeist(int limit) {
-        //hashmap mapping search term to count
-        return null;
+    synchronized List<String> zeitgeist(int limit) {
+        List<String> mostVisited = new ArrayList<>();
+        List<BufferableInt> l = pageCount.getAll();
+
+        int i = 0;
+
+        //get the maximum count of the list
+        while (i < limit && l.size() != 0) {
+            BufferableInt max = l.get(0);
+            for (BufferableInt b : l) {
+                if (b.getInt() > max.getInt())
+                    max = b;
+            }
+            mostVisited.add(max.id());
+            l.remove(max);
+            i++;
+        }
+
+        return mostVisited;
     }
 
     /**
@@ -122,8 +177,25 @@ public class WikiMediator {
      * @param limit
      * @return
      */
-    List<String> trending(int limit) {
-        return null;
+    synchronized List<String> trending(int limit) {
+        List<String> mostVisited = new ArrayList<>();
+        List<BufferableInt> l = pageCount.getAll();
+
+        int i = 0;
+
+        //get the maximum count of the list
+        while (i < limit && l.size() != 0) {
+            BufferableInt max = l.get(0);
+            for (BufferableInt b : l) {
+                if (b.getInt() > max.getInt())
+                    max = b;
+            }
+            mostVisited.add(max.id());
+            l.remove(max);
+            i++;
+        }
+
+        return mostVisited;
     }
 
     /**
@@ -134,7 +206,7 @@ public class WikiMediator {
      * basic page requests.
      * @return
      */
-    int peakLoad30s() {
+    synchronized int peakLoad30s() {
         return -1;
     }
 }
@@ -158,4 +230,15 @@ BufferableString is used for getPage
 how do we keep track of time?
 make a BufferableTime that contains the system time with the requests used (method signatures) - for trending
 and peak
+
+requests are only concerned with the names of the methods called, while pageCount is only concerned
+with the query and pageTitles used.
+https://campuswire.com/c/GA7B1C726/feed/2925 MP3 definition of requests
+
+
+check - make sure that for zeitgeist, the FSFT buffer get returns the original instance of the bufferable,
+not a new object.
+
+since the buffer cannot have duplicate ids, for Bufferable time, the id is the time, and the name is
+passed in as a parameter
  */

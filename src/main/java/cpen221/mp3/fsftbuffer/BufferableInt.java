@@ -11,6 +11,8 @@ public class BufferableInt implements Bufferable {
 
     public int getInt() { return this.i; }
 
+    public void addCount() { this.i += 1;}
+
     @Override
     public String id() {
         return this.id;
