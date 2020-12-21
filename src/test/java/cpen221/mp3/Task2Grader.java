@@ -158,7 +158,12 @@ public class Task2Grader {
 
         public void run() {
             Thread.yield();
-            buffer.update(item);
+            try {
+                buffer.update(item);
+            }
+            catch (Exception e) {
+                throw new RuntimeException("FSFTBuffer: unexpected failure of update");
+            }
         }
     }
 

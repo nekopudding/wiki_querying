@@ -73,13 +73,19 @@ public class Task1Grader {
 
     @Test
     public void testTouch() throws InterruptedException {
-        FSFTBuffer<BufferableItem> buffer = new FSFTBuffer<>(DSIZE, DTIMEOUT);
+        int TIMEOUT = DTIMEOUT + 4;
+        FSFTBuffer<BufferableItem> buffer = new FSFTBuffer<>(DSIZE, TIMEOUT);
         int val = 10;
         BufferableItem bit = new BufferableItem(val);
         buffer.put(bit);
-        Thread.sleep((DTIMEOUT/2 + 1) * 1000);
-        buffer.touch(bit.id());
-        Thread.sleep((DTIMEOUT/2 + 1) * 1000);
+        Thread.sleep((TIMEOUT / 2 + 1) * 1000);
+        try {
+            buffer.touch(bit.id());
+        }
+        catch (Exception e) {
+            fail("FSFTBuffer: unexpected exception in touch");
+        }
+        Thread.sleep((TIMEOUT / 2) * 1000);
         try {
             buffer.get(String.valueOf(val));
         }
@@ -116,7 +122,7 @@ public class Task1Grader {
         catch (Exception e) {
             fail("FSFTBuffer: No exception expected");
         }
-        Thread.sleep((DTIMEOUT/2 + 1) * 1000);
+        Thread.sleep((DTIMEOUT / 2 + 1) * 1000);
         try {
             buffer.get(String.valueOf(val));
             fail("FSFTBuffer: Item should have timed out");
@@ -246,7 +252,7 @@ public class Task1Grader {
             buffer.get(items.get(0).id());
             buffer.get(items.get(1).id());
             buffer.get(items.get(DSIZE - 1).id());
-            Thread.sleep(TIMEOUT + 1);
+            Thread.sleep((TIMEOUT + 1) * 1000);
             BufferableItem item = new BufferableItem(DSIZE);
             items.add(item);
             buffer.put(item);
