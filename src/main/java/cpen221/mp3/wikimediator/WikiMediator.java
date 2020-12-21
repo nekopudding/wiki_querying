@@ -17,17 +17,16 @@ import cpen221.mp3.fsftbuffer.*;
  *  wiki represents the domain of wikipedia from which all operations are being performed on
  *  searchCache stores the cache of recent search results
  *  getPageCache stores the cache of recent getPage results
- *  pageCount stores the number of times each title was requested within a limited period of time
- *  requests stores the requests (method calls) made along with the system times which they were made
+ *  pageCount stores the number of times each string was requested in calls to search and getPage
+ *  requestTime stores the requests (method calls) made along with the system times which they were made
  *
  * Representation Invariant:
  *  wiki, searchCache, getPageCache, pageCount, and requests are not null
  *  The buffer does not contain elements with the same Bufferable id
- *  pageCount only contains BufferableInt, the values of BufferableInt >= 1, and are only modified through
- *      search and getPage requests
+ *  pageCount does not contain duplicate or empty strings, and the values in the value set >= 1
  *  searchCache only contains BufferableList
  *  getPageCache only contains BufferableString
- *  requests only contain BufferableTime
+ *  requestTime does not contain duplicate times.
  *
  *
  * Thread Safety Condition:
@@ -51,22 +50,23 @@ public class WikiMediator {
     Wiki wiki;
     FSFTBuffer searchCache;
     FSFTBuffer getPageCache;
-    FSFTBuffer pageCount;
-    FSFTBuffer requests;
+    Map<String, Integer> pageCount;
+    Map<Long, String> requestTime;
 
     public WikiMediator (int capacity, int timeout) {
         wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
         searchCache = new FSFTBuffer(capacity, timeout);
         getPageCache = new FSFTBuffer(capacity, timeout);
-        requests = new FSFTBuffer(capacity, timeout);
+        pageCount = new ConcurrentHashMap<>();
+        requestTime = new ConcurrentHashMap<>();
     }
 
     public WikiMediator () {
         wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
         searchCache = new FSFTBuffer();
         getPageCache = new FSFTBuffer();
-        pageCount = new FSFTBuffer();
-        requests = new FSFTBuffer();
+        pageCount = new ConcurrentHashMap<>();
+        requestTime = new ConcurrentHashMap<>();
     }
 
     /**
@@ -78,7 +78,8 @@ public class WikiMediator {
      */
     synchronized List<String> search(String query, int limit) {
         //modify pageCount
-        editPageCount(query);
+        addPageCount(query);
+        addRequest("search");
         //modify searchCache and return list
         try {
             BufferableList l = (BufferableList) searchCache.get(query);
@@ -104,7 +105,8 @@ public class WikiMediator {
      */
     synchronized String getPage(String pageTitle) {
         //modify pageCount
-        editPageCount(pageTitle);
+        addPageCount(pageTitle);
+        addRequest("getPage");
         //modify getPageCache and return page text
         try {
             BufferableString s = (BufferableString) getPageCache.get(pageTitle);
@@ -126,20 +128,31 @@ public class WikiMediator {
      * Helper method to add one to pageCount each time search and getPage is called.
      * @param pageTitle
      */
-    private void editPageCount(String pageTitle) {
-        try {
-            BufferableInt b = (BufferableInt) pageCount.get(pageTitle);
-            b.addCount();
+    private void addPageCount(String pageTitle) {
+        if (pageCount.containsKey(pageTitle)) {
+            int count = pageCount.get(pageTitle);
+            count += 1;
+            pageCount.put(pageTitle, count);
         }
-        catch (InvalidObjectException e) {
-            if (e.getMessage() == "Object not found in FSFT Buffer.") {
-                Bufferable b = new BufferableInt(pageTitle, 1);
-                pageCount.put(b);
-            }
-            else {
-                throw new IllegalArgumentException(e.getMessage());
+        else {
+            pageCount.put(pageTitle,1);
+        }
+    }
+
+    /**
+     * Helper method to get the string with the maximum integer value in stringMap
+     * @param stringMap
+     * @return
+     */
+    private String getMaxCount(Map<String, Integer> stringMap) {
+        String maxString = "";
+        for (String s : stringMap.keySet()) {
+            if (maxString == "" ||
+                stringMap.get(s) > stringMap.get(maxString)) {
+                maxString = s;
             }
         }
+        return maxString;
     }
 
     /**
@@ -151,24 +164,25 @@ public class WikiMediator {
      * @return
      */
     synchronized List<String> zeitgeist(int limit) {
+        addRequest("zeitgeist");
         List<String> mostVisited = new ArrayList<>();
-        List<BufferableInt> l = pageCount.getAll();
+        Map<String, Integer> remaining = new ConcurrentHashMap<>(pageCount);
 
-        int i = 0;
-
-        //get the maximum count of the list
-        while (i < limit && l.size() != 0) {
-            BufferableInt max = l.get(0);
-            for (BufferableInt b : l) {
-                if (b.getInt() > max.getInt())
-                    max = b;
-            }
-            mostVisited.add(max.id());
-            l.remove(max);
-            i++;
+        while (remaining.size() > 0 && mostVisited.size() < limit) {
+            String max = getMaxCount(remaining);
+            remaining.remove(max);
+            mostVisited.add(max);
         }
 
         return mostVisited;
+    }
+
+    /**
+     * Helper method that adds the request made with its timestamp to requestTime
+     * @param req
+     */
+    private void addRequest(String req) {
+        requestTime.put(System.currentTimeMillis(), req);
     }
 
     /**
@@ -178,21 +192,27 @@ public class WikiMediator {
      * @return
      */
     synchronized List<String> trending(int limit) {
+        addRequest("trending");
         List<String> mostVisited = new ArrayList<>();
-        List<BufferableInt> l = pageCount.getAll();
+        Map<String, Integer> requestCount30s = new ConcurrentHashMap<>();
 
-        int i = 0;
-
-        //get the maximum count of the list
-        while (i < limit && l.size() != 0) {
-            BufferableInt max = l.get(0);
-            for (BufferableInt b : l) {
-                if (b.getInt() > max.getInt())
-                    max = b;
+        //get all the requests made in the last 30s;
+        for(Long time : requestTime.keySet()) {
+            if(time >= System.currentTimeMillis() - 30000) {
+                String req = requestTime.get(time);
+                if (requestCount30s.containsKey(req)) {
+                    requestCount30s.put(req, requestCount30s.get(req) + 1 );
+                }
+                else {
+                    requestCount30s.put(req, 1);
+                }
             }
-            mostVisited.add(max.id());
-            l.remove(max);
-            i++;
+        }
+
+        while (requestCount30s.size() > 0 && mostVisited.size() < limit) {
+            String max = getMaxCount(requestCount30s);
+            requestCount30s.remove(max);
+            mostVisited.add(max);
         }
 
         return mostVisited;
@@ -207,6 +227,9 @@ public class WikiMediator {
      * @return
      */
     synchronized int peakLoad30s() {
+        addRequest("peakLoad30s");
+
+
         return -1;
     }
 }
@@ -241,4 +264,10 @@ not a new object.
 
 since the buffer cannot have duplicate ids, for Bufferable time, the id is the time, and the name is
 passed in as a parameter
+
+implement pagecount as a hashmap that adds one to count each time called
+implement method to find the maximum of the hashmap and put the max into the list,
+then recursively get the next maximum until limit
+
+peakLoad30s
  */
