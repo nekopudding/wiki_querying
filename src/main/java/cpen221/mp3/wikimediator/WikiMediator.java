@@ -18,7 +18,8 @@ import cpen221.mp3.fsftbuffer.*;
  *  searchCache stores the cache of recent search results
  *  getPageCache stores the cache of recent getPage results
  *  pageCount stores the number of times each string was requested in calls to search and getPage
- *  requestTime stores the requests (method calls) made along with the system times which they were made
+ *  requestTime stores the system times when requests(method calls) were made
+ *  queryTime stores queries made with the time they were made
  *
  * Representation Invariant:
  *  wiki, searchCache, getPageCache, pageCount, and requests are not null
@@ -26,7 +27,7 @@ import cpen221.mp3.fsftbuffer.*;
  *  pageCount does not contain duplicate or empty strings, and the values in the value set >= 1
  *  searchCache only contains BufferableList
  *  getPageCache only contains BufferableString
- *  requestTime does not contain duplicate times.
+ *  queryTime and requestTime does not contain duplicate times.
  *
  *
  * Thread Safety Condition:
@@ -48,48 +49,58 @@ public class WikiMediator {
      */
 
     Wiki wiki;
-    FSFTBuffer searchCache;
-    FSFTBuffer getPageCache;
+    FSFTBuffer<Bufferable> searchCache;
+    FSFTBuffer<Bufferable> getPageCache;
     Map<String, Integer> pageCount;
-    Map<Long, String> requestTime;
+    Map<Long, String> queryTime;
+    List<Long> requestTime;
 
     public WikiMediator (int capacity, int timeout) {
         wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
-        searchCache = new FSFTBuffer(capacity, timeout);
-        getPageCache = new FSFTBuffer(capacity, timeout);
+        searchCache = new FSFTBuffer<>(capacity, timeout);
+        getPageCache = new FSFTBuffer<>(capacity, timeout);
         pageCount = new ConcurrentHashMap<>();
-        requestTime = new ConcurrentHashMap<>();
+        queryTime = new ConcurrentHashMap<>();
+        requestTime = new ArrayList<>();
     }
 
     public WikiMediator () {
         wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
-        searchCache = new FSFTBuffer();
-        getPageCache = new FSFTBuffer();
+        searchCache = new FSFTBuffer<>();
+        getPageCache = new FSFTBuffer<>();
         pageCount = new ConcurrentHashMap<>();
-        requestTime = new ConcurrentHashMap<>();
+        queryTime = new ConcurrentHashMap<>();
+        requestTime = new ArrayList<>();
     }
 
     /**
      * Given a query, return up to limit page titles that
      * match the query string (per Wikipedia's search service).
-     * @param query
-     * @param limit
-     * @return
+     * @param query the term to search for
+     * @param limit the maximum number of results to return
+     * @return a list of pages matching the query
+     *
+     * requires: query is not null or empty
+     * effects: adds the search results to searchCache
+     * and records the request made in pageCount, queryTime, requestTime
      */
     synchronized List<String> search(String query, int limit) {
-        //modify pageCount
-        addPageCount(query);
-        addRequest("search");
+        //modify counts
+        if (query != null && !query.equals("")) {
+            addPageCount(query);
+            addQuery(query);
+            addRequest();
+        }
         //modify searchCache and return list
         try {
             BufferableList l = (BufferableList) searchCache.get(query);
             return l.getList();
         }
         catch (InvalidObjectException e){
-            if (e.getMessage() == "Object not found in FSFT Buffer.") {
-                Bufferable l = new BufferableList(query, wiki.search(query, limit));
+            if (e.getMessage().equals("Object not found in FSFT Buffer.")) {
+                BufferableList l = new BufferableList(query, wiki.search(query, limit));
                 searchCache.put(l);
-                return ((BufferableList) l).getList();
+                return l.getList();
             }
             else {
                 throw new IllegalArgumentException(e.getMessage());
@@ -100,23 +111,30 @@ public class WikiMediator {
     /**
      * Given a pageTitle, return the text associated with
      * the Wikipedia page that matches pageTitle.
-     * @param pageTitle
-     * @return
+     * @param pageTitle the page to search for
+     * @return the text associated with that page
+     *
+     * requires: pageTitle is not null or empty
+     * effects: adds the pageText to getPageCache
+     * and records the request made in pageCount, queryTime, requestTime
      */
     synchronized String getPage(String pageTitle) {
-        //modify pageCount
-        addPageCount(pageTitle);
-        addRequest("getPage");
+        //modify counts
+        if (pageTitle != null && !pageTitle.equals("")) {
+            addPageCount(pageTitle);
+            addQuery(pageTitle);
+            addRequest();
+        }
         //modify getPageCache and return page text
         try {
             BufferableString s = (BufferableString) getPageCache.get(pageTitle);
             return s.getText();
         }
         catch (InvalidObjectException e){
-            if (e.getMessage() == "Object not found in FSFT Buffer.") {
-                Bufferable s = new BufferableString(pageTitle, wiki.getPageText(pageTitle));
+            if (e.getMessage().equals("Object not found in FSFT Buffer.")) {
+                BufferableString s = new BufferableString(pageTitle, wiki.getPageText(pageTitle));
                 getPageCache.put(s);
-                return ((BufferableString) s).getText();
+                return s.getText();
             }
             else {
                 throw new IllegalArgumentException(e.getMessage());
@@ -125,8 +143,12 @@ public class WikiMediator {
     }
 
     /**
-     * Helper method to add one to pageCount each time search and getPage is called.
-     * @param pageTitle
+     * Helper method for zeitgeist to add one to requested pageTitle
+     * @param pageTitle the title to add count to.
+     *
+     * requires: pageTitle is not null or empty
+     * effects: adds 1 to the associated pageTitle in pageCount, or adds it as a new key if
+     * not already existing
      */
     private void addPageCount(String pageTitle) {
         if (pageCount.containsKey(pageTitle)) {
@@ -140,15 +162,15 @@ public class WikiMediator {
     }
 
     /**
-     * Helper method to get the string with the maximum integer value in stringMap
-     * @param stringMap
-     * @return
+     * Helper method for zeitgeist to get the string with the highest count in pgCount
+     * @param pgCount the map to get the maximum value from
+     * @return the string associated with the highest value.
      */
-    private String getMaxCount(Map<String, Integer> stringMap) {
+    private String getMaxCount(Map<String, Integer> pgCount) {
         String maxString = "";
-        for (String s : stringMap.keySet()) {
-            if (maxString == "" ||
-                stringMap.get(s) > stringMap.get(maxString)) {
+        for (String s : pgCount.keySet()) {
+            if (maxString.equals("") ||
+                pgCount.get(s) > pgCount.get(maxString)) {
                 maxString = s;
             }
         }
@@ -160,11 +182,13 @@ public class WikiMediator {
      * getPage requests, with items being sorted in
      * non-increasing count order. When many requests have
      * been made, return only limit items.
-     * @param limit
-     * @return
+     * @param limit the maximum number of strings to return
+     * @return a list of strings sorted in non-ascending order of the most common Strings requested
+     *
+     * effects: adds a request to requestTime
      */
     synchronized List<String> zeitgeist(int limit) {
-        addRequest("zeitgeist");
+        addRequest();
         List<String> mostVisited = new ArrayList<>();
         Map<String, Integer> remaining = new ConcurrentHashMap<>(pageCount);
 
@@ -178,44 +202,54 @@ public class WikiMediator {
     }
 
     /**
-     * Helper method that adds the request made with its timestamp to requestTime
-     * @param req
+     * Helper method for trending which adds the query made with the time it was made to queryTime
+     * @param query the query to add
+     *
+     * requires: query is not empty or null
+     *
+     * effects: adds the query to queryTime;
      */
-    private void addRequest(String req) {
-        requestTime.put(System.currentTimeMillis(), req);
+    private void addQuery(String query) {
+        queryTime.put(System.currentTimeMillis(), query);
     }
 
     /**
      * Similar to zeitgeist(), but returns the most frequent
-     * requests made in the last 30 seconds.
-     * @param limit
-     * @return
+     * queries requested in the last 30 seconds.
+     * @param limit the maximum number of Strings to return
+     * @return a list of the most frequent queries requested with a size up to the limit
+     *
+     * effects: adds the request to requestTime
      */
     synchronized List<String> trending(int limit) {
-        addRequest("trending");
+        addRequest();
         List<String> mostVisited = new ArrayList<>();
-        Map<String, Integer> requestCount30s = new ConcurrentHashMap<>();
+        Map<String, Integer> queryCount30s = new ConcurrentHashMap<>();
 
         //get all the requests made in the last 30s;
-        for(Long time : requestTime.keySet()) {
+        for(Long time : queryTime.keySet()) {
             if(time >= System.currentTimeMillis() - 30000) {
-                String req = requestTime.get(time);
-                if (requestCount30s.containsKey(req)) {
-                    requestCount30s.put(req, requestCount30s.get(req) + 1 );
+                String query = queryTime.get(time);
+                if (queryCount30s.containsKey(query)) {
+                    queryCount30s.put(query, queryCount30s.get(query) + 1 );
                 }
                 else {
-                    requestCount30s.put(req, 1);
+                    queryCount30s.put(query, 1);
                 }
             }
         }
 
-        while (requestCount30s.size() > 0 && mostVisited.size() < limit) {
-            String max = getMaxCount(requestCount30s);
-            requestCount30s.remove(max);
+        while (queryCount30s.size() > 0 && mostVisited.size() < limit) {
+            String max = getMaxCount(queryCount30s);
+            queryCount30s.remove(max);
             mostVisited.add(max);
         }
 
         return mostVisited;
+    }
+
+    private void addRequest() {
+        requestTime.add(System.currentTimeMillis());
     }
 
     /**
@@ -224,50 +258,35 @@ public class WikiMediator {
      * all requests made using the public API of WikiMediator,
      * and therefore counts all five methods listed as
      * basic page requests.
-     * @return
+     * @return the maximum number of requests made in any 30s window
+     *
+     * effects: adds itself as a request made to requestTime
      */
     synchronized int peakLoad30s() {
-        addRequest("peakLoad30s");
+        addRequest();
 
+        long timeIn30s;
+        int count;
+        List<Integer> numReqIn30s = new ArrayList<>();
 
-        return -1;
+        for (int i = 0; i < requestTime.size(); i++) {
+            timeIn30s = requestTime.get(i) + 30000;
+            count = 0;
+
+            for (int j = i; requestTime.get(j) < timeIn30s; j++) {
+                count++;
+            }
+            numReqIn30s.add(count);
+        }
+        return getMax30s(numReqIn30s);
+    }
+
+    private int getMax30s(List<Integer> numReqIn30s) {
+        int max = 0;
+        for (Integer i : numReqIn30s) {
+            if (i > max)
+                max = i;
+        }
+        return max;
     }
 }
-/*
-Task 3: Wiki Mediator
-will access wikipedia using Jwiki API to obtain pages
-should cache pages to minimize network accesses (most likely
-using buffer)
-also collect statistical info about requests - trending, peak, and zeitgeist methods
-
-to cache search results, we need a concurrent hashmap mapping search term to list of results
-and place it in the buffer
-
-to cache page text, we place the page text as string id in bufferable
-the cache also needs to keep track of time and which method calls were made
-
-bufferableInt is used for zeitgeist
-BufferableList is used for search
-BufferableString is used for getPage
-
-how do we keep track of time?
-make a BufferableTime that contains the system time with the requests used (method signatures) - for trending
-and peak
-
-requests are only concerned with the names of the methods called, while pageCount is only concerned
-with the query and pageTitles used.
-https://campuswire.com/c/GA7B1C726/feed/2925 MP3 definition of requests
-
-
-check - make sure that for zeitgeist, the FSFT buffer get returns the original instance of the bufferable,
-not a new object.
-
-since the buffer cannot have duplicate ids, for Bufferable time, the id is the time, and the name is
-passed in as a parameter
-
-implement pagecount as a hashmap that adds one to count each time called
-implement method to find the maximum of the hashmap and put the max into the list,
-then recursively get the next maximum until limit
-
-peakLoad30s
- */
