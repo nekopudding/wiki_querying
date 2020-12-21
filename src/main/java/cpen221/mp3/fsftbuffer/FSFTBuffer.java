@@ -1,8 +1,6 @@
 package cpen221.mp3.fsftbuffer;
 
 import java.io.InvalidObjectException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -181,13 +179,4 @@ public class FSFTBuffer<T extends Bufferable> {
         timeouts.put(t, (int) (System.currentTimeMillis() / 1000 + timeout));
         return true;
     }
-
-    /**
-     * Get all the current elements in the buffer.
-     * @return
-     */
-    public synchronized List<T> getAll() {
-        return new ArrayList<T>(names.values());
-    }
-
 }
