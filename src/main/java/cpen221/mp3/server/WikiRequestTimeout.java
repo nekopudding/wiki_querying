@@ -1,0 +1,128 @@
+package cpen221.mp3.server;
+
+import cpen221.mp3.wikimediator.WikiMediator;
+
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+public class WikiRequestTimeout {
+    private String id;
+    private String type;
+    private String query;
+    private String limit;
+    private String pageTitle;
+    private String timeout;
+
+    public WikiRequestTimeout(String id, String type, String query, String limit, String timeout){
+        this.id = id;
+        this.type = type;
+        this.query = query;
+        this.limit = limit;
+        this.timeout = timeout;
+    }
+
+    public WikiRequestTimeout(String id, String type, String query, String limit){
+        this.id = id;
+        this.type = type;
+        this.query = query;
+        this.limit = limit;
+    }
+
+    public WikiRequestTimeout(String id, String type, String pageTitle){
+        this.id = id;
+        this.type = type;
+        this.pageTitle = pageTitle;
+    }
+
+    public WikiRequestTimeout(String id, String type){
+        this.id = id;
+        this.type = type;
+    }
+
+
+    public WikiReply runOperation(WikiMediator wk){
+        Callable<WikiReply> search = () -> {
+            return new WikiReply(id, "success", wk.search(this.query, Integer.parseInt(this.limit)));
+        };
+        Callable<WikiReply> getPage = () -> {
+            return new WikiReply(id, "success", wk.getPage(this.pageTitle));
+        };
+        Callable<WikiReply> zeitgeist = () -> {
+            return new WikiReply(id, "success", wk.zeitgeist(Integer.parseInt(this.limit)));
+        };
+        Callable<WikiReply> trending = () -> {
+            return new WikiReply(id,"success", wk.trending(Integer.parseInt(this.limit)));
+        };
+        Callable<WikiReply> peakLoad30s = () -> {
+            return new WikiReply(id, "success", wk.peakLoad30s());
+        };
+        ExecutorService executorService = Executors.newFixedThreadPool(10);
+        Future<WikiReply> futureSearch = executorService.submit(search);
+        Future<WikiReply> futureGetPage = executorService.submit(getPage);
+        Future<WikiReply> futureZeitgeist = executorService.submit(zeitgeist);
+        Future<WikiReply> futureTrending = executorService.submit(trending);
+        Future<WikiReply> futurePeakLoad30s = executorService.submit(peakLoad30s);
+
+        switch (type) {
+            case "search":
+                try {
+                    return futureSearch.get(Integer.parseInt(timeout) * 1000, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException | ExecutionException ee) {
+                    ee.printStackTrace();
+                } catch (TimeoutException e) {
+                    return new WikiReply(id, "failed", "Operation timed out");
+                }
+            case "getPage":
+                try {
+                    return futureGetPage.get(Integer.parseInt(timeout)*1000, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException | ExecutionException ee) {
+                    ee.printStackTrace();
+                } catch (TimeoutException e) {
+                    return new WikiReply(id, "failed", "Operation timed out");
+                }
+            case "zeitgeist":
+                try {
+                    return futureZeitgeist.get(Integer.parseInt(timeout)*1000, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException | ExecutionException ee) {
+                    ee.printStackTrace();
+                } catch (TimeoutException e) {
+                    return new WikiReply(id, "failed", "Operation timed out");
+                }
+            case "trending":
+                try {
+                    return futureTrending.get(Integer.parseInt(timeout)*1000, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException | ExecutionException ee) {
+                    ee.printStackTrace();
+                } catch (TimeoutException e) {
+                    return new WikiReply(id, "failed", "Operation timed out");
+                }
+            case "peakLoad30s":
+                try {
+                    return futurePeakLoad30s.get(Integer.parseInt(timeout)*1000, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException | ExecutionException ee) {
+                    ee.printStackTrace();
+                } catch (TimeoutException e) {
+                    return new WikiReply(id, "failed", "Operation timed out");
+                }
+        }
+        return new WikiReply(id, "failed", "Invalid type of operation.");
+    }
+
+    public String getId(){ return id; }
+
+    public String getType(){ return type; }
+
+    public String getQuery(){ return query; }
+
+    public String getLimit(){ return limit; }
+
+    public String getPageTitle(){ return pageTitle; }
+
+
+}

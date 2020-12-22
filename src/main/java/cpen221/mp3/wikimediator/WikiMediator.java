@@ -2,6 +2,7 @@ package cpen221.mp3.wikimediator;
 
 import java.io.InvalidObjectException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -73,6 +74,15 @@ public class WikiMediator {
         requestTime = new ArrayList<>();
     }
 
+    public WikiMediator (Map pageCount, Map queryTime, List requestTime){
+        wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
+        searchCache = new FSFTBuffer<>();
+        getPageCache = new FSFTBuffer<>();
+        this.pageCount = pageCount;
+        this.queryTime = queryTime;
+        this.requestTime = requestTime;
+    }
+
     /**
      * Given a query, return up to limit page titles that
      * match the query string (per Wikipedia's search service).
@@ -84,7 +94,7 @@ public class WikiMediator {
      * effects: adds the search results to searchCache
      * and records the request made in pageCount, queryTime, requestTime
      */
-    synchronized List<String> search(String query, int limit) {
+    synchronized public List<String> search(String query, int limit) {
         //modify counts
         if (query != null && !query.equals("")) {
             addPageCount(query);
@@ -118,7 +128,7 @@ public class WikiMediator {
      * effects: adds the pageText to getPageCache
      * and records the request made in pageCount, queryTime, requestTime
      */
-    synchronized String getPage(String pageTitle) {
+    synchronized public String getPage(String pageTitle) {
         //modify counts
         if (pageTitle != null && !pageTitle.equals("")) {
             addPageCount(pageTitle);
@@ -187,7 +197,7 @@ public class WikiMediator {
      *
      * effects: adds a request to requestTime
      */
-    synchronized List<String> zeitgeist(int limit) {
+    synchronized public List<String> zeitgeist(int limit) {
         addRequest();
         List<String> mostVisited = new ArrayList<>();
         Map<String, Integer> remaining = new ConcurrentHashMap<>(pageCount);
@@ -221,7 +231,7 @@ public class WikiMediator {
      *
      * effects: adds the request to requestTime
      */
-    synchronized List<String> trending(int limit) {
+    synchronized public List<String> trending(int limit) {
         addRequest();
         List<String> mostVisited = new ArrayList<>();
         Map<String, Integer> queryCount30s = new ConcurrentHashMap<>();
@@ -262,7 +272,7 @@ public class WikiMediator {
      *
      * effects: adds itself as a request made to requestTime
      */
-    synchronized int peakLoad30s() {
+    synchronized public int peakLoad30s() {
         addRequest();
 
         long timeIn30s;
@@ -288,5 +298,29 @@ public class WikiMediator {
                 max = i;
         }
         return max;
+    }
+
+    public Map<String, Integer> getPageCount(){
+        Map<String, Integer> copy = new HashMap<>();
+        for (String s : this.pageCount.keySet()){
+            copy.put(s, this.pageCount.get(s));
+        }
+        return copy;
+    }
+
+    public Map<Long, String> getQueryTime(){
+        Map<Long, String> copy = new HashMap<>();
+        for (Long s : this.queryTime.keySet()){
+            copy.put(s, this.queryTime.get(s));
+        }
+        return copy;
+    }
+
+    public List<Long> getRequestTime(){
+        List<Long> copy = new ArrayList<>();
+        for (long l : this.requestTime){
+            copy.add(l);
+        }
+        return copy;
     }
 }
