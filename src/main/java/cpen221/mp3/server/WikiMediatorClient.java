@@ -50,7 +50,7 @@ public class WikiMediatorClient {
             client.sendRequest("{\n" +
                     "\t\"id\": \"1\",\n" +
                     "\t\"type\": \"search\",\n" +
-                    "\t\"query\": \"Donald Trump\",\n" +
+                    "\t\"query\": \"Dune\",\n" +
                     "\t\"limit\": \"12\"\n" +
                     "}\n");
             String z = client.getReply();

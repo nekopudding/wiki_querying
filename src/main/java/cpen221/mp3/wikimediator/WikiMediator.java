@@ -283,7 +283,7 @@ public class WikiMediator {
             timeIn30s = requestTime.get(i) + 30000;
             count = 0;
 
-            for (int j = i; requestTime.get(j) < timeIn30s; j++) {
+            for (int j = i; j < requestTime.size() && requestTime.get(j) < timeIn30s; j++) {
                 count++;
             }
             numReqIn30s.add(count);
