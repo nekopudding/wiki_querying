@@ -11,6 +11,33 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+/**
+ * Abstraction Function:
+ * WikiRequest represents a single request sent by a client. This includes what the client wants
+ * to do, and the parameters that are given. Does not include timeout clause.
+ * id represents the internal id of the request.
+ * type represents the specific action requested.
+ * query represents the keywords to be searched.
+ * limit represents the number of entries in output lists.
+ * pageTitle represents the title of the wikipedia page that is requested.
+ *
+ * Representation Invariant:
+ * id, type, query, limit, pageTitle are all Strings.
+ *
+ * Requires: type must be either "search", "getPage", "zeitgeist", "trending", or "peakLoad30s"
+ * If type = "search",
+ * query must be a non empty string, and limit must be an integer represented by a string.
+ *
+ * If type = "pageTitle",
+ * pageTitle must be a non empty string.
+ *
+ * If type = "zeitgeist",
+ * limit must be an integer represented by a string.
+ *
+ * If type = "trending",
+ * limit must be an integer represented by a string.
+ *
+ */
 public class WikiRequest {
     private String id;
     private String type;

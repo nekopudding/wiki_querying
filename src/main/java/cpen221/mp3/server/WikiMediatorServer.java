@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.math.BigInteger;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -21,6 +20,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Thread-Safety Argument:
+ * Everything other than the WikiMediator instance is confined or immutable.
+ * The WikiMediator variable reference only changes in the constructor.
+ * The WikiMediator getter methods for the WikiMediator object makes copies of its own maps and lists,
+ * meaning immutability.
+ * For the methods that actually do change the maps and lists (by adding new requests), they all use
+ * thread-safe data types, e.g. ConcurrentHashMap.
+ */
 public class WikiMediatorServer {
 
     public static final int WIKI_PORT = 3000;
@@ -40,7 +48,15 @@ public class WikiMediatorServer {
     public WikiMediatorServer(int port, int n) throws IOException {
         serverSocket = new ServerSocket(port);
         maxConc = n;
-        med = new WikiMediator();
+        try{
+            Map<String, Integer> p = loadPageCount("pageCount");
+            Map<Long, String> q = loadQueryTime("queryTime");
+            List<Long> r = loadRequestTime("requestTime");
+            med = new WikiMediator(p,q,r);
+        }
+        catch (FileNotFoundException e){
+            med = new WikiMediator();
+        }
     }
 
     public WikiMediatorServer(int port, int n, Map<String, Integer> p, Map<Long, String> q, List<Long> r) throws IOException{
@@ -131,6 +147,11 @@ public class WikiMediatorServer {
             }
     }
 
+    /**
+     * Runs a shutdown sequence for the server.
+     *
+     * Effects: Saves current maps and lists that keeps track of requests in txt files in /local.
+     */
     synchronized private void shutDown(){
         Map<String, Integer> pageCount = med.getPageCount();
         saveMapToFile(pageCount, "pageCount");
@@ -141,7 +162,17 @@ public class WikiMediatorServer {
         System.exit(0);
     }
 
-    private <T,G> void saveMapToFile(Map<T,G> m, String filename){
+    /**
+     * Saves a map to a txt file. Filename dictated by filename input.
+     * Each line of the txt file contains:
+     * Key.toString():Value.toString().
+     *
+     * @param m Map to be saved. Must not be null or empty.
+     * @param filename name of the file to be saved. Does not include .txt
+     * @param <T> generic type of key.
+     * @param <G> generic type of value.
+     */
+    synchronized private <T,G> void saveMapToFile(Map<T,G> m, String filename){
         File data = new File(outputFilePath+"/"+filename+".txt");
         BufferedWriter bf = null;
         try{
@@ -163,7 +194,15 @@ public class WikiMediatorServer {
         }
     }
 
-    private <T> void saveListToFile(List<T> l, String filename){
+    /**
+     * Saves a list to a txt file in /local.
+     * Each line of the txt file represents each element of the list.
+     *
+     * @param l List to be saved. Must not be null or empty.
+     * @param filename name of the file to be saved. Does not include .txt
+     * @param <T> generic type of list.
+     */
+    synchronized private <T> void saveListToFile(List<T> l, String filename){
         File data = new File(outputFilePath+"/"+filename+".txt");
         BufferedWriter bf = null;
         try{
@@ -185,7 +224,17 @@ public class WikiMediatorServer {
         }
     }
 
-    private static Map<String,Integer> loadPageCount(String filename) throws FileNotFoundException {
+    /** Helper method to import the pageCount map back into the server.
+     *
+     * @param filename name of page count map text file. Does not contain .txt. Must be a text file
+     *                 formatted in the style of:
+     *                 Key:Value
+     *                 Key2:Value2
+     *                 etc.
+     * @return Map<String, Integer> taken from the specified filename.
+     * @throws FileNotFoundException checked exception if no file found.
+     */
+    synchronized static Map<String,Integer> loadPageCount(String filename) throws FileNotFoundException {
         Map<String, Integer> output = new HashMap<String, Integer>();
         File file = new File(outputFilePath+"/"+filename+".txt");
         BufferedReader br = new BufferedReader(new FileReader(file));
@@ -206,7 +255,17 @@ public class WikiMediatorServer {
         return output;
     }
 
-    private static Map<Long, String> loadQueryTime(String filename) throws FileNotFoundException {
+    /** Helper method to import the queryTime back into the server.
+     *
+     * @param filename name of queryTime map text file. Does not contain .txt. Must be a text file
+     *      *                 formatted in the style of:
+     *      *                 Key:Value
+     *      *                 Key2:Value2
+     *      *                 etc.
+     * @return Map<Long, String> taken from the specified filename.
+     * @throws FileNotFoundException if the file is not found.
+     */
+    synchronized private static Map<Long, String> loadQueryTime(String filename) throws FileNotFoundException {
         Map<Long, String> output = new HashMap<Long, String>();
         File file = new File(outputFilePath+"/"+filename+".txt");
         BufferedReader br = new BufferedReader(new FileReader(file));
@@ -227,7 +286,14 @@ public class WikiMediatorServer {
         return output;
     }
 
-    private static List<Long> loadRequestTime(String filename) throws FileNotFoundException {
+    /** Helper method to load the requestTime list back into the server.
+     *
+     * @param filename name of request Time list file. Does not contain .txt. Must be a text file
+     *                 formatted so each element is in its own line. Each element must be a long.
+     * @return
+     * @throws FileNotFoundException
+     */
+    synchronized private static List<Long> loadRequestTime(String filename) throws FileNotFoundException {
         List<Long> output = new ArrayList<>();
         File file = new File(outputFilePath+"/"+filename+".txt");
         BufferedReader br = new BufferedReader(new FileReader(file));
