@@ -2,14 +2,6 @@ package cpen221.mp3.server;
 
 import cpen221.mp3.wikimediator.WikiMediator;
 
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
  * Abstraction Function:
@@ -70,11 +62,21 @@ public class WikiRequest {
         this.type = type;
     }
 
-
+    /**
+     *  Parses the operation requested, and returns a corresponding WikiReply object.
+     * @param wk The WikiMediator instance that the server wraps. Must not be null.
+     * @return WikiReply object that represents the three reply fields, id, status, and reponse.
+     */
     public WikiReply runOperation(WikiMediator wk){
         switch (type) {
             case "search":
-                return new WikiReply(id, "success", wk.search(this.query, Integer.parseInt(this.limit)));
+                if (limit != null) {
+                    return new WikiReply(id, "success",
+                        wk.search(this.query, Integer.parseInt(this.limit)));
+                }
+                else{
+                    return new WikiReply(id, "failed", "Invalid type of operation.");
+                }
             case "getPage":
                 return new WikiReply(id, "success", wk.getPage(this.pageTitle));
             case "zeitgeist":

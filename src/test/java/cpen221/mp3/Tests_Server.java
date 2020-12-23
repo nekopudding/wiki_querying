@@ -15,7 +15,14 @@ import static org.junit.Assert.*;
 public class Tests_Server {
 
     @Test
-    public void test1() throws IOException {
+    public void test1() throws IOException, InterruptedException {
+        Thread server = new Thread(new Runnable() {
+            public void run(){
+                String[] args = new String[1];
+                WikiMediatorServer.main(args);
+            }
+        });
+        server.start();
         WikiMediatorClient client = new WikiMediatorClient("192.168.50.219",
             WikiMediatorServer.WIKI_PORT);
         client.sendRequest("{\n" +
@@ -28,54 +35,52 @@ public class Tests_Server {
         assertEquals("{\"id\":\"1\",\"status\":\"success\",\"response\":[\"Dog (disambiguation)\",\"Dog\",\"Difference of Gaussians\",\"Talk:Dog\"]}", y);
 
         client.sendRequest("{\n" +
-            "\t\"id\": \"1\",\n" +
+            "\t\"id\": \"2\",\n" +
             "\t\"type\": \"search\",\n" +
             "\t\"query\": \"Barack Obama\",\n" +
             "\t\"limit\": \"2\"\n" +
             "}\n");
         String z = client.getReply();
         assertEquals(
-            "{\"id\":\"1\",\"status\":\"success\",\"response\":[\"Barack Obama\",\"Barack Obama in comics\"]}", z);
+            "{\"id\":\"2\",\"status\":\"success\",\"response\":[\"Barack Obama\",\"Barack Obama in comics\"]}", z);
 
         client.sendRequest("{\n" +
-            "   \"id\": \"1\",\n" +
-            "   \"type\": \"search\",\n" +
-            "   \"query\": \"Euseius_minutisetus\",\n" +
-            "   \"timeout\": \"1\"\n" +
-            "}\n");
-        String a = client.getReply();
-        assertEquals("{\"id\":\"1\",\"status\":\"failed\",\"response\":\"Invalid type of operation.\"}", a);
-
-        client.sendRequest("{\n" +
-            "   \"id\": \"1\",\n" +
+            "   \"id\": \"4\",\n" +
             "   \"type\": \"getPage\",\n" +
             "   \"pageTitle\": \"Euseius_minutisetus\",\n" +
             "   \"timeout\": \"1\"\n" +
             "}\n");
         String b = client.getReply();
-        assertEquals("{\"id\":\"1\",\"status\":\"success\",\"response\":\"{{Speciesbox\\n| genus \\u003d Euseius\\n| species \\u003d minutisetus\\n| authority \\u003d Moraes \\u0026 McMurtry, 1989\\n}}\\n\\n\\u0027\\u0027\\u0027\\u0027\\u0027Euseius minutisetus\\u0027\\u0027\\u0027\\u0027\\u0027 is a species of mite in the family [[Phytoseiidae]].\\u003cref name\\u003dgbif/\\u003e\\n\\n\\u003d\\u003dReferences\\u003d\\u003d\\n{{Reflist|refs\\u003d\\n\\u003cref name\\u003dgbif\\u003e\\n{{Cite web| title\\u003d\\u0027\\u0027Euseius minutisetus\\u0027\\u0027\\n| url\\u003dhttps://www.gbif.org/species/2187140\\n| website\\u003dGBIF\\n| accessdate\\u003d2020-01-24\\n}}\\u003c/ref\\u003e\\n}}\\n\\n{{Taxonbar|from\\u003dQ6477794}}\\n\\n[[Category:Arachnids]]\\n[[Category:Articles created by Qbugbot]]\\n[[Category:Animals described in 1989]]\\n\\n\\n{{phytoseiidae-stub}}\"}", b);
+        assertEquals("{\"id\":\"4\",\"status\":\"success\",\"response\":\"{{Speciesbox\\n| genus \\u003d Euseius\\n| species \\u003d minutisetus\\n| authority \\u003d Moraes \\u0026 McMurtry, 1989\\n}}\\n\\n\\u0027\\u0027\\u0027\\u0027\\u0027Euseius minutisetus\\u0027\\u0027\\u0027\\u0027\\u0027 is a species of mite in the family [[Phytoseiidae]].\\u003cref name\\u003dgbif/\\u003e\\n\\n\\u003d\\u003dReferences\\u003d\\u003d\\n{{Reflist|refs\\u003d\\n\\u003cref name\\u003dgbif\\u003e\\n{{Cite web| title\\u003d\\u0027\\u0027Euseius minutisetus\\u0027\\u0027\\n| url\\u003dhttps://www.gbif.org/species/2187140\\n| website\\u003dGBIF\\n| accessdate\\u003d2020-01-24\\n}}\\u003c/ref\\u003e\\n}}\\n\\n{{Taxonbar|from\\u003dQ6477794}}\\n\\n[[Category:Arachnids]]\\n[[Category:Articles created by Qbugbot]]\\n[[Category:Animals described in 1989]]\\n\\n\\n{{phytoseiidae-stub}}\"}", b);
 
         client.sendRequest("{\n" +
-            "   \"id\": \"1\",\n" +
+            "   \"id\": \"5\",\n" +
             "   \"type\": \"getPage\",\n" +
             "   \"pageTitle\": \"Euseius_minutisetus\",\n" +
             "   \"timeout\": \"0\"\n" +
             "}\n");
         String timeout = client.getReply();
-        assertEquals("{\"id\":\"1\",\"status\":\"failed\",\"response\":\"Operation timed out\"}", timeout);
+        assertEquals("{\"id\":\"5\",\"status\":\"failed\",\"response\":\"Operation timed out\"}", timeout);
 
         //stop
         client.sendRequest("{\n" +
             "\t\"id\": \"ten\",\n" +
             "\t\"type\": \"stop\"\n" +
             "}\n");
-        a = client.getReply();
-        System.out.println(a);
+        String g = client.getReply();
+        System.out.println(g);
         client.close();
     }
 
     @Test
     public void testZeitgeist() throws IOException {
+        Thread server = new Thread(new Runnable() {
+            public void run(){
+                String[] args = new String[1];
+                WikiMediatorServer.main(args);
+            }
+        });
+        server.start();
         WikiMediatorClient client = new WikiMediatorClient("192.168.50.219",
             WikiMediatorServer.WIKI_PORT);
         client.sendRequest("{\n" +
@@ -127,7 +132,7 @@ public class Tests_Server {
             "\t\"type\": \"peakLoad30s\"\n" +
             "}\n");
         String c = client.getReply();
-        assertEquals("{\"id\":\"two\",\"status\":\"success\",\"response\":9}", c);
+        assertEquals("{\"id\":\"two\",\"status\":\"success\",\"response\":12}", c);
 
         client.sendRequest("{\n" +
             "\t\"id\": \"ten\",\n" +
@@ -137,4 +142,54 @@ public class Tests_Server {
         System.out.println(a);
         client.close();
     }
+
+    @Test
+    public void testServer() throws IOException {
+        Thread a = new Thread(new Runnable() {
+            public void run(){
+                String[] args = new String[1];
+                WikiMediatorServer.main(args);
+            }
+        });
+        a.start();
+        WikiMediatorClient client = new WikiMediatorClient("192.168.50.219",
+            WikiMediatorServer.WIKI_PORT);
+        client.sendRequest("{\n" +
+            "\t\"id\": \"1\",\n" +
+            "\t\"type\": \"search\",\n" +
+            "\t\"query\": \"Dog\",\n" +
+            "\t\"limit\": \"4\"\n" +
+            "}\n");
+        String y = client.getReply();
+        assertEquals("{\"id\":\"1\",\"status\":\"success\",\"response\":[\"Dog (disambiguation)\",\"Dog\",\"Difference of Gaussians\",\"Talk:Dog\"]}", y);
+        client.sendRequest("{\n" +
+            "\t\"id\": \"ten\",\n" +
+            "\t\"type\": \"stop\"\n" +
+            "}\n");
+        String b = client.getReply();
+        System.out.println(a);
+        client.close();
+    }
+
+    @Test
+    public void testInvalid() throws IOException {
+        Thread server = new Thread(new Runnable() {
+            public void run(){
+                String[] args = new String[1];
+                WikiMediatorServer.main(args);
+            }
+        });
+        server.start();
+        WikiMediatorClient client = new WikiMediatorClient("192.168.50.219",
+            WikiMediatorServer.WIKI_PORT);
+        client.sendRequest("{\n" +
+            "   \"id\": \"3\",\n" +
+            "   \"type\": \"search\",\n" +
+            "   \"query\": \"Euseius_minutisetus\",\n" +
+            "   \"timeout\": \"1\"\n" +
+            "}\n");
+        String a = client.getReply();
+        assertEquals("{\"id\":\"3\",\"status\":\"failed\",\"response\":\"Invalid type of operation.\"}", a);
+    }
+
 }
