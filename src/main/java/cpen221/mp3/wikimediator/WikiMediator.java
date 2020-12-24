@@ -100,22 +100,28 @@ public class WikiMediator {
             addPageCount(query);
             addQuery(query);
             addRequest();
-        }
-        //modify searchCache and return list
-        try {
-            BufferableList l = (BufferableList) searchCache.get(query);
-            return l.getList();
-        }
-        catch (InvalidObjectException e){
-            if (e.getMessage().equals("Object not found in FSFT Buffer.")) {
-                BufferableList l = new BufferableList(query, wiki.search(query, limit));
-                searchCache.put(l);
+
+            //modify searchCache and return list
+            try {
+                BufferableList l = (BufferableList) searchCache.get(query);
                 return l.getList();
             }
-            else {
-                throw new IllegalArgumentException(e.getMessage());
+            catch (InvalidObjectException e){
+                if (e.getMessage().equals("Object not found in FSFT Buffer.")) {
+                    BufferableList l = new BufferableList(query, wiki.search(query, limit));
+                    searchCache.put(l);
+                    return l.getList();
+                }
+                else {
+                    throw new IllegalArgumentException(e.getMessage());
+                }
             }
         }
+        else {
+            return new ArrayList<>();
+        }
+
+
     }
 
     /**
@@ -134,21 +140,25 @@ public class WikiMediator {
             addPageCount(pageTitle);
             addQuery(pageTitle);
             addRequest();
-        }
-        //modify getPageCache and return page text
-        try {
-            BufferableString s = (BufferableString) getPageCache.get(pageTitle);
-            return s.getText();
-        }
-        catch (InvalidObjectException e){
-            if (e.getMessage().equals("Object not found in FSFT Buffer.")) {
-                BufferableString s = new BufferableString(pageTitle, wiki.getPageText(pageTitle));
-                getPageCache.put(s);
+
+            //modify getPageCache and return page text
+            try {
+                BufferableString s = (BufferableString) getPageCache.get(pageTitle);
                 return s.getText();
             }
-            else {
-                throw new IllegalArgumentException(e.getMessage());
+            catch (InvalidObjectException e){
+                if (e.getMessage().equals("Object not found in FSFT Buffer.")) {
+                    BufferableString s = new BufferableString(pageTitle, wiki.getPageText(pageTitle));
+                    getPageCache.put(s);
+                    return s.getText();
+                }
+                else {
+                    throw new IllegalArgumentException(e.getMessage());
+                }
             }
+        }
+        else {
+            return "";
         }
     }
 
@@ -180,7 +190,7 @@ public class WikiMediator {
         String maxString = "";
         for (String s : pgCount.keySet()) {
             if (maxString.equals("") ||
-                pgCount.get(s) > pgCount.get(maxString)) {
+                    pgCount.get(s) > pgCount.get(maxString)) {
                 maxString = s;
             }
         }
@@ -220,6 +230,14 @@ public class WikiMediator {
      * effects: adds the query to queryTime;
      */
     private void addQuery(String query) {
+        if (queryTime.get(System.currentTimeMillis()) != null) {
+            try {
+                Thread.sleep(10);
+            }
+            catch (InterruptedException e) {
+                System.out.println("Sleep interrupted in addQuery");
+            }
+        }
         queryTime.put(System.currentTimeMillis(), query);
     }
 
@@ -249,6 +267,7 @@ public class WikiMediator {
             }
         }
 
+        //sorts it in non-ascending order
         while (queryCount30s.size() > 0 && mostVisited.size() < limit) {
             String max = getMaxCount(queryCount30s);
             queryCount30s.remove(max);
@@ -258,6 +277,10 @@ public class WikiMediator {
         return mostVisited;
     }
 
+    /**
+     * Helper method for peakLoad30s that adds a request
+     * effects: adds an entry of the system time to requestTime
+     */
     private void addRequest() {
         requestTime.add(System.currentTimeMillis());
     }
