@@ -1,14 +1,21 @@
 package cpen221.mp3.wikimediator;
 
 import java.io.InvalidObjectException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.TokenStream;
+import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.fastily.jwiki.core.Wiki;
 import cpen221.mp3.fsftbuffer.*;
+import org.fastily.jwiki.dwrap.Contrib;
+import query.QueryBaseListener;
+import query.QueryLexer;
+import query.QueryParser;
 
 
 /**
@@ -74,7 +81,7 @@ public class WikiMediator {
         requestTime = new ArrayList<>();
     }
 
-    public WikiMediator (Map<String, Integer> pageCount, Map<Long, String> queryTime, List<Long> requestTime){
+    public WikiMediator (Map pageCount, Map queryTime, List requestTime){
         wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
         searchCache = new FSFTBuffer<>();
         getPageCache = new FSFTBuffer<>();
@@ -190,7 +197,7 @@ public class WikiMediator {
         String maxString = "";
         for (String s : pgCount.keySet()) {
             if (maxString.equals("") ||
-                    pgCount.get(s) > pgCount.get(maxString)) {
+                pgCount.get(s) > pgCount.get(maxString)) {
                 maxString = s;
             }
         }
@@ -230,14 +237,6 @@ public class WikiMediator {
      * effects: adds the query to queryTime;
      */
     private void addQuery(String query) {
-        if (queryTime.get(System.currentTimeMillis()) != null) {
-            try {
-                Thread.sleep(10);
-            }
-            catch (InterruptedException e) {
-                System.out.println("Sleep interrupted in addQuery");
-            }
-        }
         queryTime.put(System.currentTimeMillis(), query);
     }
 
@@ -267,7 +266,6 @@ public class WikiMediator {
             }
         }
 
-        //sorts it in non-ascending order
         while (queryCount30s.size() > 0 && mostVisited.size() < limit) {
             String max = getMaxCount(queryCount30s);
             queryCount30s.remove(max);
@@ -277,10 +275,6 @@ public class WikiMediator {
         return mostVisited;
     }
 
-    /**
-     * Helper method for peakLoad30s that adds a request
-     * effects: adds an entry of the system time to requestTime
-     */
     private void addRequest() {
         requestTime.add(System.currentTimeMillis());
     }
@@ -346,4 +340,154 @@ public class WikiMediator {
         }
         return copy;
     }
+
+    public static List<String> executeQuery(String query) {
+
+
+        CharStream stream = new ANTLRInputStream(query);
+        QueryLexer lexer = new QueryLexer(stream);
+        lexer.reportErrorsAsExceptions();
+        TokenStream tokens = new CommonTokenStream(lexer);
+        QueryParser parser = new QueryParser(tokens);
+        parser.reportErrorsAsExceptions();
+        ParseTree tree = parser.query();
+        System.err.println(tree.toStringTree(parser));
+        new ParseTreeWalker().walk(new QueryListener_PrintEverything(), tree);
+
+        ParseTreeWalker walker = new ParseTreeWalker();
+        QueryListener_QueryCreator listener = new QueryListener_QueryCreator();
+        walker.walk(listener, tree);
+
+        HashSet<String> result = listener.getResult();
+        List<String> finalResult = new ArrayList<String>(result);
+
+        return finalResult;
+    }
+
+    private static class QueryListener_QueryCreator extends QueryBaseListener {
+        Wiki wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
+        HashSet<String> result = new HashSet<String>();
+        String item;
+
+        public void exitItem(QueryParser.ItemContext ctx) {
+            item = ctx.getText();
+        }
+
+        public void exitCondition(QueryParser.ConditionContext ctx) {
+            if (ctx.AND() != null) {
+                Iterator<String> it = result.iterator();
+                while(it.hasNext()){
+
+                }
+            }
+        }
+
+        public void exitSimple_condition(QueryParser.Simple_conditionContext ctx) {
+            String str = ctx.STRING().toString();
+            String text = str.substring(1, str.length() - 1);
+            if (ctx.TITLE() != null) {
+                //List<String> list = wiki.search(text,-1);
+
+                if (item.equals("category")) {
+                    List<String> c = wiki.getCategoriesOnPage(text);
+                    for (String s : c) {
+                        result.add(s);
+                    }
+
+                } else if (item.equals("author")) {
+                    result.add(wiki.getLastEditor(text));
+                }
+
+            } else if (ctx.AUTHOR() != null) {
+                ArrayList<Contrib> c = wiki.getContribs(text, -1, true, false);
+                if (item.equals("page")) {
+                    for (Contrib s : c) {
+                        if (wiki.getLastEditor(s.title).equals(text)) {
+                            result.add(s.title);
+                        }
+                    }
+
+                } else if (item.equals("category")) {
+                    for (Contrib s : c) {
+                        if (wiki.getLastEditor(s.title).equals(text)) {
+                            List<String> category = wiki.getCategoriesOnPage(s.title);
+                            for (String t : category) {
+                                result.add(t);
+                            }
+                        }
+                    }
+                }
+
+            } else if (ctx.CATEGORY() != null) {
+                ArrayList<String> c = wiki.getCategoryMembers(text);
+
+                if (item.equals("page")) {
+                    for (String s : c) {
+                        result.add(s);
+                    }
+
+                } else if (item.equals("author")) {
+                    for (String s : c) {
+                        result.add(wiki.getLastEditor(s));
+                    }
+                }
+
+            }
+        }
+
+        public HashSet<String> getResult() {
+            return result;
+        }
+    }
+
+    private static class QueryListener_PrintEverything extends QueryBaseListener {
+        public void enterQuery(QueryParser.QueryContext ctx) {
+            System.err.println("entering poly: " + ctx.getText());
+        }
+
+        public void exitQuery(QueryParser.QueryContext ctx) {
+            System.err.println("exiting poly: " + ctx.getText());
+        }
+
+        public void enterItem(QueryParser.ItemContext ctx) {
+            System.err.println("entering item: " + ctx.getText());
+        }
+
+        public void exitItem(QueryParser.ItemContext ctx) {
+            System.err.println("exiting item: " + ctx.getText());
+        }
+
+        public void enterCondition(QueryParser.ConditionContext ctx) {
+            System.err.println("entering condition: " + ctx.getText());
+        }
+
+        public void exitCondition(QueryParser.ConditionContext ctx) {
+            System.err.println("exiting condition: " + ctx.getText());
+            System.err.println("    AND: " + ctx.AND());
+            System.err.println("    OR: " + ctx.OR());
+        }
+
+        public void enterSimple_condition(QueryParser.Simple_conditionContext ctx) {
+            System.err.println("entering simpleCondition: " + ctx.getText());
+        }
+
+        public void exitSimple_condition(QueryParser.Simple_conditionContext ctx) {
+            System.err.println("exiting simpleCondition: " + ctx.getText());
+            System.err.println("    STRING: " + ctx.STRING());
+            System.err.println("    TITLE: " + ctx.TITLE());
+            System.err.println("    AUTHOR: " + ctx.AUTHOR());
+            System.err.println("    CATEGORY: " + ctx.CATEGORY());
+        }
+
+        public void enterSorted(QueryParser.SortedContext ctx) {
+            System.err.println("entering sorted: " + ctx.getText());
+        }
+
+        public void exitSorted(QueryParser.SortedContext ctx) {
+            System.err.println("exiting sorted: " + ctx.getText());
+        }
+    }
+
 }
+
+

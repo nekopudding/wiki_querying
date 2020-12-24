@@ -1,4 +1,4 @@
-**CPEN 221 / Fall 2020 / MP3**
+*CPEN 221 / Fall 2020 / MP3**
 
 # Buffers, Concurrency and Wikipedia
 
