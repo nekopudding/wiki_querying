@@ -81,7 +81,7 @@ public class WikiMediator {
         requestTime = new ArrayList<>();
     }
 
-    public WikiMediator (Map pageCount, Map queryTime, List requestTime){
+    public WikiMediator (Map<String, Integer> pageCount, Map<Long, String> queryTime, List<Long> requestTime){
         wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
         searchCache = new FSFTBuffer<>();
         getPageCache = new FSFTBuffer<>();
@@ -237,6 +237,14 @@ public class WikiMediator {
      * effects: adds the query to queryTime;
      */
     private void addQuery(String query) {
+        if (queryTime.get(System.currentTimeMillis()) != null) {
+            try {
+                Thread.sleep(10);
+            }
+            catch (InterruptedException e) {
+                System.out.println("Sleep interrupted");
+            }
+        }
         queryTime.put(System.currentTimeMillis(), query);
     }
 
@@ -359,14 +367,14 @@ public class WikiMediator {
         walker.walk(listener, tree);
 
         HashSet<String> result = listener.getResult();
-        List<String> finalResult = new ArrayList<String>(result);
+        List<String> finalResult = new ArrayList<>(result);
 
         return finalResult;
     }
 
     private static class QueryListener_QueryCreator extends QueryBaseListener {
         Wiki wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
-        HashSet<String> result = new HashSet<String>();
+        HashSet<String> result = new HashSet<>();
         String item;
 
         public void exitItem(QueryParser.ItemContext ctx) {
@@ -376,9 +384,9 @@ public class WikiMediator {
         public void exitCondition(QueryParser.ConditionContext ctx) {
             if (ctx.AND() != null) {
                 Iterator<String> it = result.iterator();
-                while(it.hasNext()){
+                //while(it.hasNext()){
 
-                }
+                //}
             }
         }
 
