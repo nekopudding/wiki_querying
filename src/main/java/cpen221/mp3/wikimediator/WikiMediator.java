@@ -74,7 +74,7 @@ public class WikiMediator {
         requestTime = new ArrayList<>();
     }
 
-    public WikiMediator (Map pageCount, Map queryTime, List requestTime){
+    public WikiMediator (Map<String, Integer> pageCount, Map<Long, String> queryTime, List<Long> requestTime){
         wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
         searchCache = new FSFTBuffer<>();
         getPageCache = new FSFTBuffer<>();
