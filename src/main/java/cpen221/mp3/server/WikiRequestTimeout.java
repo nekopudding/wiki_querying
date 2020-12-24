@@ -75,7 +75,11 @@ public class WikiRequestTimeout {
         this.type = type;
     }
 
-
+    /**
+     *  Parses the operation requested, and returns a corresponding WikiReply object.
+     * @param wk The WikiMediator instance that the server wraps. Must not be null.
+     * @return WikiReply object that represents the three reply fields, id, status, and reponse.
+     */
     public WikiReply runOperation(WikiMediator wk){
         Callable<WikiReply> search = () -> {
             return new WikiReply(id, "success", wk.search(this.query, Integer.parseInt(this.limit)));
@@ -101,12 +105,17 @@ public class WikiRequestTimeout {
 
         switch (type) {
             case "search":
-                try {
-                    return futureSearch.get(Integer.parseInt(timeout) * 1000, TimeUnit.MILLISECONDS);
-                } catch (InterruptedException | ExecutionException ee) {
-                    ee.printStackTrace();
-                } catch (TimeoutException e) {
-                    return new WikiReply(id, "failed", "Operation timed out");
+                if(limit != null){
+                    try {
+                        return futureSearch.get(Integer.parseInt(timeout) * 1000, TimeUnit.MILLISECONDS);
+                    } catch (InterruptedException | ExecutionException ee) {
+                        ee.printStackTrace();
+                    } catch (TimeoutException e) {
+                        return new WikiReply(id, "failed", "Operation timed out");
+                    }
+                }
+                else{
+                    return new WikiReply(id, "failed", "Invalid type of operation.");
                 }
             case "getPage":
                 try {

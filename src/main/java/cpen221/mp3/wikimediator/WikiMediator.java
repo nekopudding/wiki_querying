@@ -1,10 +1,7 @@
 package cpen221.mp3.wikimediator;
 
 import java.io.InvalidObjectException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
@@ -110,22 +107,28 @@ public class WikiMediator {
             addPageCount(query);
             addQuery(query);
             addRequest();
-        }
-        //modify searchCache and return list
-        try {
-            BufferableList l = (BufferableList) searchCache.get(query);
-            return l.getList();
-        }
-        catch (InvalidObjectException e){
-            if (e.getMessage().equals("Object not found in FSFT Buffer.")) {
-                BufferableList l = new BufferableList(query, wiki.search(query, limit));
-                searchCache.put(l);
+
+            //modify searchCache and return list
+            try {
+                BufferableList l = (BufferableList) searchCache.get(query);
                 return l.getList();
             }
-            else {
-                throw new IllegalArgumentException(e.getMessage());
+            catch (InvalidObjectException e){
+                if (e.getMessage().equals("Object not found in FSFT Buffer.")) {
+                    BufferableList l = new BufferableList(query, wiki.search(query, limit));
+                    searchCache.put(l);
+                    return l.getList();
+                }
+                else {
+                    throw new IllegalArgumentException(e.getMessage());
+                }
             }
         }
+        else {
+            return new ArrayList<>();
+        }
+
+
     }
 
     /**
@@ -144,21 +147,25 @@ public class WikiMediator {
             addPageCount(pageTitle);
             addQuery(pageTitle);
             addRequest();
-        }
-        //modify getPageCache and return page text
-        try {
-            BufferableString s = (BufferableString) getPageCache.get(pageTitle);
-            return s.getText();
-        }
-        catch (InvalidObjectException e){
-            if (e.getMessage().equals("Object not found in FSFT Buffer.")) {
-                BufferableString s = new BufferableString(pageTitle, wiki.getPageText(pageTitle));
-                getPageCache.put(s);
+
+            //modify getPageCache and return page text
+            try {
+                BufferableString s = (BufferableString) getPageCache.get(pageTitle);
                 return s.getText();
             }
-            else {
-                throw new IllegalArgumentException(e.getMessage());
+            catch (InvalidObjectException e){
+                if (e.getMessage().equals("Object not found in FSFT Buffer.")) {
+                    BufferableString s = new BufferableString(pageTitle, wiki.getPageText(pageTitle));
+                    getPageCache.put(s);
+                    return s.getText();
+                }
+                else {
+                    throw new IllegalArgumentException(e.getMessage());
+                }
             }
+        }
+        else {
+            return "";
         }
     }
 
@@ -482,5 +489,4 @@ public class WikiMediator {
     }
 
 }
-
 
