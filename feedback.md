@@ -1,43 +1,13 @@
 # mp3 Feedback
 
-## Grade: 1.5
-
-| Compilation | Timeout | Duration |
-|:-----------:|:-------:|:--------:|
-|Yes|No|53.82|
-
-## Test Results
-### cpen221.mp3.Task1Grader
-| Test Status | Count |
-| ----------- | ----- |
-|skipped|0|
-|failures|2|
-|tests|10|
-|errors|0|
-#### Failed Tests
-1. `testBufferEviction (java.lang.AssertionError: FSFTBuffer: No exception expected)`
-1. `testUpdate (java.lang.AssertionError: expected:<cpen221.mp3.Text@54bb10d0> but was:<cpen221.mp3.Text@73f1ee3>)`
-### cpen221.mp3.Task2Grader
-| Test Status | Count |
-| ----------- | ----- |
-|skipped|0|
-|failures|1|
-|tests|4|
-|errors|0|
-#### Failed Tests
-1. `testUpdate (java.lang.AssertionError: FSFTBuffer: concurrent update failure)`
+## Grade: 5.0
 
 ## Comments
+**Good work** despite some functional weaknesses in the implementations of Tasks 4 and 5.
 
++++
 
-## Test Coverage
-### FSFTBuffer
-| Metric | Coverage |
-| ------ | -------- |
-|LINE_MISSED|4|
-|LINE_COVERED|53|
-|BRANCH_COVERED|18|
-|BRANCH_MISSED|2|
+Good specs, RI/AFs, and thread safety arguments. Good use of helper functions to create clear and modular code.
 
 ## Checkstyle Results
 ### `FSFTBuffer.java`
