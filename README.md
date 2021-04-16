@@ -1,8 +1,8 @@
-**School Assignment/ Fall 2020**
+**School Assignment / Fall 2020**
 
-In this team project, we exercised our knowledge of multithreading and concurrency by using the jwiki library to implement several types of query operations as well as caching for Wikipedia's pages. 
+In this team project, we exercised our knowledge of multithreading and concurrency by using the jwiki library to implement several types of query operations for Wikipedia's pages. We also implemented caching methods for those queries through the use of a buffer. 
 
-The project requires that the code written is thread-safe. We exercised writing specificationss, RIs, AFs and thread-safety conditions, as well as our own test cases using the coverage testing method as guideline.
+The project requires that the code written is thread-safe. We exercised writing specifications, RIs, AFs and thread-safety conditions, as well as our own test cases using the coverage testing method as guideline.
 
 # Buffers, Concurrency and Wikipedia
 
