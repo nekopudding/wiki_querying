@@ -1,4 +1,8 @@
-*CPEN 221 / Fall 2020 / MP3**
+*School Assignment/ Fall 2020**
+
+In this team project, we exercised our knowledge of multithreading and concurrency by using the jwiki library to implement several types of query operations as well as caching for Wikipedia's pages. 
+
+The project requires that the code written is thread-safe. We exercised writing specificationss, RIs, AFs and thread-safety conditions, as well as our own test cases using the coverage testing method as guideline.
 
 # Buffers, Concurrency and Wikipedia
 
@@ -189,16 +193,6 @@ List<String> executeQuery(String query)
 **Antlr and Gradle**
 
 If you use ANTLR for parser generation then you should include ANTLR as a Gradle dependency. You should place the ANTLR grammar file in the appropriate folder in your `src` directory and **you should not submit auto-generated code**.
-
-## Assessment Hints
-
-- You should write specs, rep invariants, abstraction functions, and thread-safety conditions.
-- You should test your code and achieve: 
-   - 90% lines of code coverage;
-   - 90% branch coverage.
-- Each task is worth one point.
-- An extra one point is for writing clean and modular code.
-- If tasks are functionally correct but the overall submission is lacking in details such as specs, RIs, AFs and thread-safety conditions or is lacking in test coverage then the grade will be lowered by up to one point.
 
 ## Hints
 
