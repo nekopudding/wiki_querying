@@ -1,4 +1,4 @@
-*School Assignment/ Fall 2020**
+**School Assignment/ Fall 2020**
 
 In this team project, we exercised our knowledge of multithreading and concurrency by using the jwiki library to implement several types of query operations as well as caching for Wikipedia's pages. 
 
